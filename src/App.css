@@ -1,0 +1,145 @@
+.site-header {
+  order: -1; 
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  background-color: #000000;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+:has(> .site-header) {
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 160px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+  padding-left: 250px;
+}
+
+.nav-list h1 {
+  display: flex;
+  padding-right: 100px;
+  color: rgb(0, 229, 255);
+  align-items: center !important;
+}
+.nav-list a {
+  color: rgb(255, 255, 255);
+  text-decoration: none;
+  font-family: var(--heading);
+  font-weight: 500;
+  font-size: 18px;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: rgb(0, 229, 255);
+  }
+}
+
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  color: rgb(255, 255, 255);
+  font-family: var(--sans);
+  font-size: 14px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #000000;
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid #e7e7e7;
+}
+
+
+
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid black;
+  border-radius: 12px;
+  background-color: rgb(0, 0, 0);
+  padding: 20px 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  margin-top: 70px;
+  min-height: 50vh; /* Gives it nice breathing room between header and footer */
+}
+
+/* Customized styling for your H2 welcome tag */
+.home h2 {
+  font-size: 42px;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+  color: rgb(0, 229, 255);
+}
+
+.home p {
+  background-color: rgb(22, 23, 29);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.162);
+  color: white;
+  max-width: 600px;
+  margin-bottom: 32px;
+}
+
+/* The music-focused description paragraph */
+.hero-subtitle {
+  font-size: 20px;
+  line-height: 160%;
+  color: var(--text);
+  max-width: 800px !important;
+  margin-bottom: 32px;
+  padding: 16px;
+}
+
+/* Container for your call-to-action button */
+.cta-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* Sleek music-store style button */
+.cta-button {
+  display: inline-block;
+  background-color: rgb(0, 0, 0);
+  color: #ffffff;
+  border: 1px solid rgb(0, 229, 255);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+/* Subtle hover effect when a producer hovers over the button */
+.cta-button:hover {
+  border-color: rgb(238, 0, 255);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -3px rgba(170, 59, 255, 0.3);
+  opacity: 0.9;
+}
