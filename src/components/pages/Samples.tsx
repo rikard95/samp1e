@@ -10,6 +10,7 @@ export function Samples() {
   const [currentTime, setCurrentTime] = useState(0);
 
   const audioRef = useRef(null);
+  const preloadedAudioRef = useRef(new Map());
 
   // Läs in filer
   const audioFiles = import.meta.glob('/public/audio/*.wav', { eager: true });
@@ -45,8 +46,23 @@ export function Samples() {
 }, [sampleList, searchTerm]);
 
   useEffect(() => {
+    sampleList.forEach(({ fileUrl }) => {
+      if (preloadedAudioRef.current.has(fileUrl)) return;
+      const audio = new Audio(fileUrl);
+      audio.preload = "auto";
+      audio.load();
+      preloadedAudioRef.current.set(fileUrl, audio);
+    });
+  }, [sampleList]);
+
+  useEffect(() => {
     return () => {
       if (audioRef.current) audioRef.current.pause();
+      preloadedAudioRef.current.forEach((audio) => {
+        audio.pause();
+        audio.src = "";
+      });
+      preloadedAudioRef.current.clear();
     };
   }, []);
 
@@ -73,7 +89,13 @@ export function Samples() {
       audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
     }
 
-    const audio = new Audio(fileUrl);
+    const cachedAudio = preloadedAudioRef.current.get(fileUrl);
+    const audio = cachedAudio || new Audio(fileUrl);
+    if (!cachedAudio) {
+      audio.preload = "auto";
+      preloadedAudioRef.current.set(fileUrl, audio);
+    }
+    audio.currentTime = 0;
     audioRef.current = audio;
     setIsPlayingId(id);
     setProgress(0);
