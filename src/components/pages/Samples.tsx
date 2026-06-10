@@ -4,6 +4,7 @@ import './Samples.css';
 
 export function Samples() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedFolder, setExpandedFolder] = useState(null);
   const [isPlayingId, setIsPlayingId] = useState(null);
   const [progress, setProgress] = useState(0); 
   const [duration, setDuration] = useState(0);
@@ -12,59 +13,93 @@ export function Samples() {
   const audioRef = useRef(null);
   const preloadedAudioRef = useRef(new Map());
 
-  // Läs in filer
-  const audioFiles = import.meta.glob('/public/audio/*.wav', { eager: true });
+  // Vi använder 'as: url' för att hämta direkta sökvägar från /public
+  const audioFiles = import.meta.glob('/public/audio/**/*.wav', { eager: true, as: 'url' });
 
-  // Memoize för att undvika att beräkna om listan vid varje render
-  const sampleList = useMemo(() => {
-    return Object.keys(audioFiles).map((path, index) => {
-      const fileName = path.split('/').pop() || "Unknown_Sample.wav";
-      const fileUrl = path.replace('/public', '');
+  const { groupedSamples, allSamples } = useMemo(() => {
+    const groups = {};
+    const flatList = [];
+    
+    Object.entries(audioFiles).forEach(([path, fileUrl], index) => {
+      // Vi tar bort '/public' från sökvägen eftersom filer i public nås via rot-URL
+      const cleanUrl = path.replace('/public', '');
+      const parts = path.split('/');
+      const fileName = parts.pop();
+      const folderName = parts[parts.length - 1];
+
+      if (!groups[folderName]) groups[folderName] = [];
+      
       const isDrum = /drum|snare|kick|hat|perc|loop/i.test(fileName);
-      return {
-        id: index + 1,
-        name: fileName,
-        type: isDrum ? "Drum" : "Melody",
-        size: "WAV",
-        bpm: "-",    
-        fileUrl: fileUrl
+      
+      const sample = { 
+        id: index + 1, 
+        name: fileName, 
+        folder: folderName, 
+        type: isDrum ? "Drum" : "Melody", 
+        size: "WAV", 
+        bpm: "-", 
+        fileUrl: cleanUrl 
       };
+      
+      groups[folderName].push(sample);
+      flatList.push(sample);
     });
+    return { groupedSamples: groups, allSamples: flatList };
   }, [audioFiles]);
 
-  // Filtrera baserat på sökterm
-  const filteredSamples = useMemo(() => {
-  if (!searchTerm.trim()) return sampleList;
+  // ... (Resten av din logik för handlePlay, handleTimeUpdate etc förblir oförändrad)
 
-  const searchTerms = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
+  const searchResults = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return {
+      folders: Object.keys(groupedSamples).filter(f => f.toLowerCase().includes(term)),
+      samples: allSamples.filter(s => s.name.toLowerCase().includes(term))
+    };
+  }, [groupedSamples, allSamples, searchTerm]);
 
-  return sampleList.filter((sample) => {
-    const nameLower = sample.name.toLowerCase();
-    // Kontrollera att ALLA sökord finns i filnamnet
-    return searchTerms.every(term => nameLower.includes(term));
-  });
-}, [sampleList, searchTerm]);
+  const handleBack = () => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
+    setIsPlayingId(null);
+    setExpandedFolder(null);
+    setSearchTerm("");
+  };
 
   useEffect(() => {
-    sampleList.forEach(({ fileUrl }) => {
+    allSamples.forEach(({ fileUrl }) => {
       if (preloadedAudioRef.current.has(fileUrl)) return;
       const audio = new Audio(fileUrl);
       audio.preload = "auto";
       audio.load();
       preloadedAudioRef.current.set(fileUrl, audio);
     });
-  }, [sampleList]);
+  }, [allSamples]);
 
   useEffect(() => {
     return () => {
       if (audioRef.current) audioRef.current.pause();
-      preloadedAudioRef.current.forEach((audio) => {
-        audio.pause();
-        audio.src = "";
-      });
+      preloadedAudioRef.current.forEach((audio) => { audio.pause(); audio.src = ""; });
       preloadedAudioRef.current.clear();
     };
   }, []);
+
+  const handlePlay = (id, fileUrl) => {
+    if (isPlayingId === id && audioRef.current) {
+      if (!audioRef.current.paused) { audioRef.current.pause(); setIsPlayingId(null); }
+      return;
+    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeEventListener('timeupdate', handleTimeUpdate); }
+    const cachedAudio = preloadedAudioRef.current.get(fileUrl);
+    const audio = cachedAudio || new Audio(fileUrl);
+    audio.currentTime = 0;
+    audioRef.current = audio;
+    setIsPlayingId(id);
+    setProgress(0);
+    setCurrentTime(0);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.onloadedmetadata = () => setDuration(audio.duration);
+    audio.onended = () => { setIsPlayingId(null); setProgress(0); setCurrentTime(0); };
+    audio.play().catch(err => console.error("Playback failed:", err));
+  };
 
   const handleTimeUpdate = () => {
     if (!audioRef.current) return;
@@ -73,39 +108,6 @@ export function Samples() {
     setCurrentTime(current);
     setDuration(dur);
     setProgress(dur > 0 ? (current / dur) * 100 : 0);
-  };
-
-  const handlePlay = (id, fileUrl) => {
-    if (isPlayingId === id && audioRef.current) {
-      if (!audioRef.current.paused) {
-        audioRef.current.pause();
-        setIsPlayingId(null);
-      }
-      return;
-    }
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-    }
-
-    const cachedAudio = preloadedAudioRef.current.get(fileUrl);
-    const audio = cachedAudio || new Audio(fileUrl);
-    if (!cachedAudio) {
-      audio.preload = "auto";
-      preloadedAudioRef.current.set(fileUrl, audio);
-    }
-    audio.currentTime = 0;
-    audioRef.current = audio;
-    setIsPlayingId(id);
-    setProgress(0);
-    setCurrentTime(0);
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.onloadedmetadata = () => setDuration(audio.duration);
-    audio.onended = () => { setIsPlayingId(null); setProgress(0); setCurrentTime(0); };
-
-    audio.play().catch(err => console.error("Playback failed:", err));
   };
 
   const handleScrub = (e) => {
@@ -126,68 +128,63 @@ export function Samples() {
 
   const handleDownload = (fileUrl, fileName) => {
     const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName; 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.href = fileUrl; link.download = fileName; 
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
   return (
     <div className="samples-page">
-      <h2>Browse Handcrafted Samples</h2>
-      
-      {/* Sökfält */}
+      <h2>{expandedFolder ? expandedFolder : "Browse Handcrafted Samples"}</h2>
       <div className="search-bar-container">
-        <input 
-          type="text" 
-          placeholder="Search sounds (e.g. vocal, drum)..." 
-          className="search-input"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <input type="text" placeholder="Search..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
-
       <div className="samples-container">
-        {filteredSamples.length === 0 ? (
-          <p style={{ color: 'white', padding: '20px' }}>No matches found for "{searchTerm}"</p>
+        {searchTerm ? (
+          <>
+            {searchResults.folders.map(f => (
+              <button key={f} className="folder-card" onClick={() => { setExpandedFolder(f); setSearchTerm(""); }}> {f}</button>
+            ))}
+            {searchResults.samples.map(item => (
+              <SampleCard key={item.id} item={item} isPlaying={isPlayingId === item.id} onPlay={handlePlay} onDownload={handleDownload} currentTime={currentTime} progress={progress} duration={duration} onScrub={handleScrub} formatTime={formatTime} />
+            ))}
+          </>
+        ) : expandedFolder ? (
+          <>
+            <button className="back-button" onClick={handleBack}>← Back</button>
+            {groupedSamples[expandedFolder].map(item => (
+              <SampleCard key={item.id} item={item} isPlaying={isPlayingId === item.id} onPlay={handlePlay} onDownload={handleDownload} currentTime={currentTime} progress={progress} duration={duration} onScrub={handleScrub} formatTime={formatTime} />
+            ))}
+          </>
         ) : (
-          filteredSamples.map((sample) => {
-            const isCurrent = isPlayingId === sample.id;
-            return (
-              <div key={sample.id} className={`sample-card ${isCurrent ? 'active-card' : ''}`}>
-                <div className="sample-info">
-                  <button className="play-button" onClick={() => handlePlay(sample.id, sample.fileUrl)}>
-                    <span className="play-icon">{isCurrent ? "⏸" : "▶"}</span>
-                  </button>
-                  <div className="sample-text">
-                    <span className="sample-name">{sample.name}</span>
-                    <div className="sample-details">
-                      <span className="sample-tag">{sample.type}</span>
-                      <span>•</span>
-                      <span>{sample.bpm}</span>
-                      <span>•</span>
-                      <span className="sample-size">{sample.size}</span>
-                    </div>
-                  </div>
-                  <div className="sample-actions">
-                    <button className="download-button" onClick={() => handleDownload(sample.fileUrl, sample.name)}>
-                      <span className="download-icon">↓</span> Download
-                    </button>
-                  </div>
-                </div>
-                <div className="timeline-container">
-                  <span className="time-display">{isCurrent ? formatTime(currentTime) : "0:00"}</span>
-                  <input 
-                    type="range" className="seek-slider" min="0" max="100" step="0.1"
-                    value={isCurrent ? progress : 0} onChange={handleScrub} disabled={!isCurrent}
-                  />
-                  <span className="time-display">{isCurrent ? formatTime(duration) : "0:00"}</span>
-                </div>
-              </div>
-            );
-          })
+          Object.keys(groupedSamples).map(folder => (
+            <button key={folder} className="folder-card" onClick={() => setExpandedFolder(folder)}> {folder}</button>
+          ))
         )}
+      </div>
+    </div>
+  );
+}
+
+function SampleCard({ item, isPlaying, onPlay, onDownload, currentTime, progress, duration, onScrub, formatTime }) {
+  return (
+    <div className={`sample-card ${isPlaying ? 'active-card' : ''}`}>
+      <div className="sample-info">
+        <button className="play-button" onClick={() => onPlay(item.id, item.fileUrl)}>
+          <span className="play-icon">{isPlaying ? "⏸" : "▶"}</span>
+        </button>
+        <div className="sample-text">
+          <span className="sample-name">{item.name}</span>
+          <div className="sample-details">
+            <span className="sample-tag">{item.type}</span>
+            <span>•</span> <span>{item.folder}</span>
+          </div>
+        </div>
+        <button className="download-button" onClick={() => onDownload(item.fileUrl, item.name)}>↓ Download</button>
+      </div>
+      <div className="timeline-container">
+        <span className="time-display">{isPlaying ? formatTime(currentTime) : "0:00"}</span>
+        <input type="range" className="seek-slider" min="0" max="100" step="0.1" value={isPlaying ? progress : 0} onChange={onScrub} disabled={!isPlaying} />
+        <span className="time-display">{isPlaying ? formatTime(duration) : "0:00"}</span>
       </div>
     </div>
   );

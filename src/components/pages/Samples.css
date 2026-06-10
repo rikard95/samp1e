@@ -77,7 +77,7 @@
 }
 
 .sample-card:hover {
-  border-color: rgba(0, 229, 255, 0.3);
+  border-color: rgb(238, 0, 255);
   transform: translateY(-2px);
 }
 
@@ -257,7 +257,7 @@
     width: 100%;
   }
 
-  .samples-container .sample-card .download-button {
+  .samples-container .sample-card .download-button {1
     width: 100%;
     justify-content: center;
   }
@@ -269,4 +269,54 @@
   .time-display {
     font-size: 12px;
   }
+}
+
+/* Ny mapp-grid som matchar dina kort */
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background-color: rgb(0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+/* Mapp-knapparna får samma utseende som dina sample-cards */
+.folder-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(22, 23, 29);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 40px;
+  cursor: pointer;
+  color: white;
+  font-size: 1.2rem;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.folder-card:hover {
+  border-color: rgb(238, 0, 255);
+  color: rgb(238, 0, 255);
+  transform: translateY(-2px);
+}
+
+/* Back-knappen får samma stil som dina download-knappar */
+.back-button {
+  background: transparent;
+  border: 1px solid rgb(0, 229, 255);
+  color: rgb(0, 229, 255);
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.back-button:hover {
+  background: rgb(0, 0, 0);
+  color: rgb(238, 0, 255);
+  border-color: rgb(238, 0, 255);
 }
