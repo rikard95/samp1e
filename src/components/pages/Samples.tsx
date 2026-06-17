@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 // @ts-ignore
 import './Samples.css';
 
@@ -9,6 +11,7 @@ export function Samples() {
   const [progress, setProgress] = useState(0); 
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isZipping, setIsZipping] = useState(false);
 
   const audioRef = useRef(null);
   const preloadedAudioRef = useRef(new Map());
@@ -47,8 +50,6 @@ export function Samples() {
     return { groupedSamples: groups, allSamples: flatList };
   }, [audioFiles]);
 
-  // ... (Resten av din logik för handlePlay, handleTimeUpdate etc förblir oförändrad)
-
   const searchResults = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return {
@@ -62,6 +63,25 @@ export function Samples() {
     setIsPlayingId(null);
     setExpandedFolder(null);
     setSearchTerm("");
+  };
+
+  const handleDownloadFolder = async (folderName, samples) => {
+    setIsZipping(true);
+    const zip = new JSZip();
+    
+    try {
+      for (const sample of samples) {
+        const response = await fetch(sample.fileUrl);
+        const blob = await response.blob();
+        zip.file(sample.name, blob);
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${folderName}_pack.zip`);
+    } catch (error) {
+      console.error("Kunde inte skapa zip-fil:", error);
+    } finally {
+      setIsZipping(false);
+    }
   };
 
   useEffect(() => {
@@ -134,7 +154,18 @@ export function Samples() {
 
   return (
     <div className="samples-page">
-      <h2>{expandedFolder ? expandedFolder : "Browse Handcrafted Samples"}</h2>
+      <div className="header-container">
+        <h2>{expandedFolder ? expandedFolder : "Browse Handcrafted Samples"}</h2>
+        {expandedFolder && (
+          <button 
+            className="download-pack-button" 
+            onClick={() => handleDownloadFolder(expandedFolder, groupedSamples[expandedFolder])}
+            disabled={isZipping}
+          >
+            {isZipping ? "Packar..." : "↓ Download Folder"}
+          </button>
+        )}
+      </div>
       <div className="search-bar-container">
         <input type="text" placeholder="Search..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>

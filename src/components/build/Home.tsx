@@ -2,6 +2,20 @@ import { Footer } from "./Footer";
 import { Header } from "./Header";
 
 export function Home() {
+  // Funktion som körs varje gång musen rör sig över knappen
+  const handleMouseMove = (e) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    
+    // Räknar ut X och Y i förhållande till knappens kanter
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Sätter CSS-variablerna direkt på knappen
+    button.style.setProperty('--mouse-x', `${x}px`);
+    button.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   return (
     <>
       <div className="home" style={{ textAlign: 'left' }}>
@@ -22,7 +36,11 @@ export function Home() {
         </p>
 
         <div className="cta-container">
-          <a href="/samples" className="cta-button">Browse Samp1es</a>
+          {/* Vi lägger till onMouseMove här */}
+          <a href="/samples" className="cta-button" onMouseMove={handleMouseMove}>
+            Browse Samp1es
+            <span className="ai-border"></span>
+          </a>
         </div>
       </div>
     </>

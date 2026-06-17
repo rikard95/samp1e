@@ -26,6 +26,30 @@
   font-size: 16px;
 }
 
+.download-pack-button {
+  background-color: #4a90e2; /* En fin blå färg */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.download-pack-button:hover:not(:disabled) {
+  background-color: #357abd;
+}
+
+.download-pack-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.download-pack-button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+}
+
 /* --- SEARCH BAR --- */
 .search-bar-container {
   margin-bottom: 20px;
@@ -320,3 +344,4 @@
   color: rgb(238, 0, 255);
   border-color: rgb(238, 0, 255);
 }
+
